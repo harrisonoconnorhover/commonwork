@@ -4,7 +4,7 @@ Commonwork helps strangers build useful things together using GitHub and their o
 
 “Donating spare AI capacity” means doing a task through your own authorized account and contributing the result. Commonwork does not pool tokens, collect AI credentials, run agents for you, or give strangers access to your computer.
 
-This is an early prototype and repository starter, released under the [MIT License](LICENSE). Repository: [harrisonoconnorhover/commonwork](https://github.com/harrisonoconnorhover/commonwork). Local tests cover the coordination rules; live installation and multi-contributor behavior are separate verification steps. See [HANDOFF.md](HANDOFF.md) for verification status.
+This is an early prototype and repository starter, released under the [MIT License](LICENSE). Repository: [harrisonoconnorhover/commonwork](https://github.com/harrisonoconnorhover/commonwork). 54 automated tests pass. A [single-account GitHub smoke check](https://github.com/harrisonoconnorhover/commonwork/pull/2) verified task claims/releases, PR summaries, author-vote exclusion, and fresh-head updates. A real multi-contributor pilot remains unverified. See [HANDOFF.md](HANDOFF.md) for details.
 
 ![Commonwork offline demonstration](docs/preview.jpg)
 
