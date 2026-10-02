@@ -2,7 +2,7 @@
 
 ## Finished
 
-- Published the standalone Commonwork starter at https://github.com/harrisonoconnorhover/commonwork under the MIT License.
+- Published [Commonwork](https://github.com/harrisonoconnorhover/commonwork) under the MIT License and posted the [requested Reddit reply](https://www.reddit.com/r/ClaudeCode/comments/1wvibvh/comment/pdi89oo/).
 - Added idea/task forms, expiring reservations, and work packets for contributors' own AI tools.
 - Implemented explained PR ballots tied to the reviewed commit, with one eligible ballot per account, quorum, and a visible advisory tally.
 - Installed GitHub coordination and independent test workflows; corrected PR comment permissions after a real HTTP 403.
@@ -30,7 +30,6 @@ Read `README.md` for installation and contributor commands. For a local web prev
 
 ## Remaining
 
-- Post the repository and verified limitations in the requested Reddit discussion.
 - Run a real multi-contributor pilot; edited/deleted ballots have local test coverage but have not been exercised in the live pilot.
 - Configure repository review/check requirements before accepting production contributions.
 - Comments can be edited/deleted and account counts cannot establish independent people. This is not a tested large-community service.
