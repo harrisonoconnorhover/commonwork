@@ -8,3 +8,5 @@ prototype. It is not a product change and will be closed without merging.
 - Push another commit and confirm the summary identifies the new head.
 
 This single-account test cannot establish independent community voting behavior.
+
+Second revision: verify that the posted ballot summary follows the new head.
