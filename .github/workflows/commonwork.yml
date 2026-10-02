@@ -17,7 +17,7 @@ on:
 permissions:
   contents: read
   issues: write
-  pull-requests: read
+  pull-requests: write
 
 concurrency:
   group: commonwork-${{ github.event.issue.number || github.event.pull_request.number || inputs.number || github.run_id }}
