@@ -1,0 +1,43 @@
+name: Community idea
+description: Discuss a useful outcome before turning it into a small contribution task.
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with who benefits and one small result. Once the idea is clear, create a separate [Task] issue with acceptance criteria and allowed files. Ideas are discussion; task claims belong on [Task] issues.
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+      description: What would you like the community to build or improve?
+    validations:
+      required: true
+  - type: textarea
+    id: beneficiaries
+    attributes:
+      label: Beneficiaries
+      description: Who benefits, and what problem do they have?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this matters
+      description: What makes this useful, and what existing options leave the problem unsolved?
+    validations:
+      required: true
+  - type: textarea
+    id: first-result
+    attributes:
+      label: First small result
+      description: What is the smallest useful contribution someone could finish independently?
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Success criteria
+      description: How would beneficiaries or reviewers know the first result helped?
+    validations:
+      required: true

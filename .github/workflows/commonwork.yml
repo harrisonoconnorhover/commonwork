@@ -1,0 +1,40 @@
+name: Commonwork coordinator
+
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+  issues:
+    types: [opened, edited, reopened, closed]
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, closed]
+  workflow_dispatch:
+    inputs:
+      number:
+        description: Issue or PR number to refresh
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: commonwork-${{ github.event.issue.number || github.event.pull_request.number || inputs.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  coordinate:
+    if: github.event_name != 'issue_comment' || github.event.comment.user.type == 'User'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Only the trusted default branch is executed with the writer token.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified 2026-10-02
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Recompute reservations and ballots from GitHub metadata
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 -m commonwork sync-event

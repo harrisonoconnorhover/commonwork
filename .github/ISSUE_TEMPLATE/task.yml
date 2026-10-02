@@ -1,0 +1,50 @@
+name: Small contribution task
+description: Propose one bounded result a volunteer can complete with their own tools.
+title: "[Task] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep this task small and independently reviewable. A volunteer posts `/claim` as the exact first line of a new comment for a 24-hour advisory lease. The first eligible human claim wins; further claims during the lease do not renew it. Only its holder can post `/release`. Renew after expiry or release then claim again (someone else may claim the gap).
+
+        Keep command comments unchanged: edited commands and bots are ignored, and deleting comments changes history. Check the latest summary, UTC expiry, and comments before working. Volunteers choose their own budget and tools; no API credentials are needed by Commonwork.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What single useful result should this task produce, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable outcomes and the smallest relevant checks.
+      placeholder: "- [ ] A reviewer can verify the result by ..."
+    validations:
+      required: true
+  - type: textarea
+    id: allowed-files
+    attributes:
+      label: Allowed files
+      description: Give exact files or directories. State explicitly if new files may be added.
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Name related work that should not be included.
+    validations:
+      required: true
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Suggested effort
+      description: A suggestion only; each volunteer sets their own time and token limits.
+      options:
+        - 15 minutes
+        - 30 minutes
+        - 60 minutes
+    validations:
+      required: true

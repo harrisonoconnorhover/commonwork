@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "quorum": 3,
+  "approval_numerator": 2,
+  "approval_denominator": 3,
+  "eligible_voters": [],
+  "claim_hours": 24
+}
