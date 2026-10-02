@@ -19,9 +19,65 @@ class CliTests(unittest.TestCase):
         output, error = io.StringIO(), io.StringIO()
         with patch("commonwork.__main__.GitHub", return_value=client), \
              patch("commonwork.__main__.load_policy", return_value=dict(DEFAULT_POLICY)), \
+             patch("commonwork.__main__.read_repository_policy", return_value=(dict(DEFAULT_POLICY), "remote policy at " + SHA, SHA)), \
              redirect_stdout(output), redirect_stderr(error):
             result = main(arguments)
         return result, output.getvalue(), error.getvalue()
+
+    def test_board_filters_and_json_include_snapshot_provenance_without_writes(self):
+        client = Mock(repo="community/project")
+        rows = [
+            {"number": 7, "title": "[Task] Open", "kind": "task", "status": "available"},
+            {"number": 8, "title": "[Task] Taken", "kind": "task", "status": "claimed"},
+            {"number": 9, "title": "Review", "kind": "review", "status": "waiting"},
+        ]
+        with patch("commonwork.__main__.board", return_value=rows):
+            result, output, error = self.run_cli([
+                "board", "--repo", client.repo, "--available", "--format", "json",
+            ], client)
+        self.assertEqual((result, error), (0, ""))
+        snapshot = json.loads(output)
+        self.assertEqual([row["number"] for row in snapshot["items"]], [7])
+        self.assertEqual(snapshot["policy_source"], "remote policy at " + SHA)
+        self.assertIn("generated_at", snapshot)
+        client.comment.assert_not_called()
+
+    def test_explicit_local_policy_does_not_fetch_remote_policy(self):
+        client = Mock(repo="community/project")
+        with patch("commonwork.__main__.GitHub", return_value=client), \
+             patch("commonwork.__main__.load_policy", return_value=dict(DEFAULT_POLICY)) as local, \
+             patch("commonwork.__main__.read_repository_policy") as remote, \
+             patch("commonwork.__main__.board", return_value=[]), redirect_stdout(io.StringIO()) as output:
+            result = main(["board", "--repo", client.repo, "--policy", "custom.json", "--format", "json"])
+        self.assertEqual(result, 0)
+        local.assert_called_once_with("custom.json")
+        remote.assert_not_called()
+        self.assertIn("Local override", json.loads(output.getvalue())["policy_source"])
+
+    def test_review_writes_only_local_packet_and_needs_no_policy_file(self):
+        client = Mock(repo="community/project")
+        with tempfile.TemporaryDirectory() as directory, \
+             patch("commonwork.__main__.GitHub", return_value=client), \
+             patch("commonwork.__main__.load_policy", side_effect=AssertionError("No local policy needed")), \
+             patch("commonwork.__main__.read_repository_policy", side_effect=AssertionError("No policy needed")), \
+             patch("commonwork.reviews.read_review_packet", return_value="# Review fixture") as packet, \
+             redirect_stdout(io.StringIO()):
+            path = Path(directory) / "review.md"
+            result = main(["review", "--repo", client.repo, "7", "--output", str(path)])
+            self.assertEqual(path.read_text(), "# Review fixture")
+        self.assertEqual(result, 0)
+        packet.assert_called_once_with(client, 7)
+        client.comment.assert_not_called()
+
+    def test_packet_uses_same_commit_as_remote_policy(self):
+        client = Mock(repo="community/project")
+        client.get.return_value = {"number": 7, "title": "[Task] Fix", "body": "Acceptance", "state": "open"}
+        result, output, error = self.run_cli(["packet", "--repo", client.repo, "7"], client)
+        self.assertEqual((result, error), (0, ""))
+        self.assertIn(f"Exact base commit: `{SHA}`", output)
+        self.assertIn("remote policy at " + SHA, output)
+        client.get.assert_called_once_with("issues/7")
+        client.comment.assert_not_called()
 
     def pr_client(self):
         client = Mock()

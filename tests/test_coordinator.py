@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import unittest
 from unittest.mock import Mock
 
-from commonwork.coordinator import DEFAULT_POLICY, event_numbers, sync_one
+from commonwork.coordinator import DEFAULT_POLICY, board, event_numbers, sync_one
 from commonwork.github import GitHub
 
 
@@ -48,6 +48,21 @@ class FakeGitHub:
 
 
 class CoordinatorTests(unittest.TestCase):
+    def test_board_uses_policy_for_expiry_and_preserves_draft_review_state(self):
+        client = Mock()
+        client.list.return_value = [
+            {"number": 1, "title": "[Task] Fix", "html_url": "https://github.com/a/b/issues/1"},
+            {"number": 2, "title": "Fix", "html_url": "https://github.com/a/b/pull/2", "pull_request": {}},
+        ]
+        client.comments.side_effect = [[human("/claim")], []]
+        client.get.return_value = {"head": {"sha": SHA}, "user": {"id": 10}, "draft": True}
+        now = datetime(2026, 10, 2, 12, tzinfo=timezone.utc)
+        rows = board(client, DEFAULT_POLICY | {"claim_hours": 1, "quorum": 5}, now=now)
+        self.assertEqual(rows[0]["status"], "available")
+        self.assertEqual(rows[1]["quorum"], 5)
+        self.assertTrue(rows[1]["draft"])
+        client.comment.assert_not_called()
+
     def test_bot_summary_changes_do_not_dispatch_another_sync(self):
         for action in ("created", "edited", "deleted"):
             event = {

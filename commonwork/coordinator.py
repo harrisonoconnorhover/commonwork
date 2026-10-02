@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import quote
 
 from .github import GitHub, positive_number
 from .tasks import claim_state, render_claim_summary
@@ -23,7 +25,13 @@ DEFAULT_POLICY = {
 
 
 def load_policy(path: str | Path = ".commonwork/policy.json") -> dict:
-    policy = DEFAULT_POLICY | json.loads(Path(path).read_text())
+    return validate_policy(json.loads(Path(path).read_text(encoding="utf-8")))
+
+
+def validate_policy(value: dict) -> dict:
+    if not isinstance(value, dict):
+        raise ValueError("Policy must be a JSON object.")
+    policy = DEFAULT_POLICY | value
     if policy.get("schema_version") != 1:
         raise ValueError("Unsupported policy schema_version; expected 1.")
     hours = policy.get("claim_hours")
@@ -32,6 +40,27 @@ def load_policy(path: str | Path = ".commonwork/policy.json") -> dict:
     # Validate voting configuration even when handling a task, before any writes.
     tally_votes([], "0" * 40, 1, policy)
     return policy
+
+
+def default_branch_sha(client: GitHub) -> str:
+    repository = client.request("GET", f"/repos/{client.repo}")
+    branch = quote(repository["default_branch"], safe="")
+    sha = client.get(f"commits/{branch}")["sha"]
+    if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
+        raise ValueError("GitHub returned an invalid default-branch commit.")
+    return sha.lower()
+
+
+def read_repository_policy(client: GitHub) -> tuple[dict, str, str]:
+    """Read deployed policy and pin its source to one default-branch commit."""
+    sha = default_branch_sha(client)
+    source = f"{client.repo}/.commonwork/policy.json at {sha}"
+    contents = client.get(f"contents/.commonwork/policy.json?ref={sha}")
+    if contents.get("type") != "file" or contents.get("encoding") != "base64":
+        raise ValueError("The repository policy must be a JSON file readable through GitHub.")
+    encoded = "".join(contents["content"].split())
+    policy = validate_policy(json.loads(base64.b64decode(encoded, validate=True).decode("utf-8")))
+    return policy, source, sha
 
 
 def task_issue(issue: dict) -> bool:
@@ -108,6 +137,7 @@ def board(client: GitHub, policy: dict, *, now=None) -> list[dict]:
             kind = "review"
             pr = client.get(f"pulls/{issue['number']}")
             state = tally_votes(client.comments(issue["number"]), pr["head"]["sha"], pr["user"]["id"], policy)
+            state["draft"] = bool(pr.get("draft"))
         elif task_issue(issue):
             kind = "task"
             state = claim_state(client.comments(issue["number"]), now, policy["claim_hours"])

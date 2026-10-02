@@ -4,19 +4,32 @@ Commonwork helps strangers build useful things together using GitHub and their o
 
 “Donating spare AI capacity” means doing a task through your own authorized account and contributing the result. Commonwork does not pool tokens, collect AI credentials, run agents for you, or give strangers access to your computer.
 
-This is an early prototype and repository starter, released under the [MIT License](LICENSE). Repository: [harrisonoconnorhover/commonwork](https://github.com/harrisonoconnorhover/commonwork). 54 automated tests pass. A [single-account GitHub smoke check](https://github.com/harrisonoconnorhover/commonwork/pull/2) verified task claims/releases, PR summaries, author-vote exclusion, and fresh-head updates. A real multi-contributor pilot remains unverified. See [HANDOFF.md](HANDOFF.md) for details.
+This is an early prototype and repository starter, released under the [MIT License](LICENSE). See the [current checks](https://github.com/harrisonoconnorhover/commonwork/actions/workflows/tests.yml) and [HANDOFF.md](HANDOFF.md) for verified behavior and remaining limitations. A [single-account GitHub smoke check](https://github.com/harrisonoconnorhover/commonwork/pull/2) exercised basic coordination; a real multi-contributor pilot remains unverified.
 
-![Commonwork offline demonstration](docs/preview.jpg)
+## Find something to contribute
 
-## Try the offline example
+New here? The [first-time contributor pilot](https://github.com/harrisonoconnorhover/commonwork/issues/3) is a bounded, optional 30-minute task: try the workflow and report real friction. Check its current reservation before starting.
 
-Use Python 3.11 or later. There are no package dependencies to install. From this repository's root:
+Browse [open tasks](https://github.com/harrisonoconnorhover/commonwork/issues?q=is%3Aissue%20is%3Aopen%20%22%5BTask%5D%22), [ideas](https://github.com/harrisonoconnorhover/commonwork/issues?q=is%3Aissue%20is%3Aopen%20%22%5BIdea%5D%22), or [pull requests needing review](https://github.com/harrisonoconnorhover/commonwork/pulls). To see current reservations and votes together, use Python 3.11 or later. There are no package dependencies to install:
 
 ```sh
-python3 -m commonwork demo
+git clone https://github.com/harrisonoconnorhover/commonwork.git
+cd commonwork
+python3 -m commonwork board --repo harrisonoconnorhover/commonwork
 ```
 
-Open `demo-output/index.html` in a browser. The example also creates `work-packet.md`, `vote-summary.md`, and `results.json` in `demo-output/`. It shows a reservation, a vote with two yes ballots and one no, and votes becoming stale after a new commit. These are fixture results, not real contributions or GitHub activity. The demo uses no accounts, network, or AI tokens.
+Want a visual board? Save a snapshot and open `demo-output/board.html` directly in your browser:
+
+```sh
+python3 -m commonwork board --repo harrisonoconnorhover/commonwork \
+  --format html --output demo-output/board.html
+```
+
+This reads actual GitHub issues and PRs. It shows when the snapshot was generated in UTC and which policy was used. Search and filters work locally; no server is needed. The page does **not** refresh itself: rerun the command for new activity. Reading or exporting a board does not post comments, reserve work, or start an AI tool. Public reads can work without authentication, subject to GitHub's rate limits.
+
+To show only available tasks, use `--available`. Use `--kind idea`, `--kind task`, or `--kind review` to narrow the board, or `--format json` for structured output. `--output PATH` saves any format; without it, output is printed. Availability means no active reservation at the snapshot time, not a guarantee that the task is still free when you open it.
+
+![A dated Commonwork board snapshot showing a real contributor task](docs/board-preview.jpg)
 
 ## How a contribution works
 
@@ -25,21 +38,24 @@ Open `demo-output/index.html` in a browser. The example also creates `work-packe
 3. Post `/claim` in the task issue. Read the coordinator's summary and expiration time to confirm who holds the reservation.
 4. Export a work packet, choose your own time and AI budget, and work with your preferred assistant in your own environment.
 5. Review the result, run relevant checks, and manually submit a pull request. Link it in the task issue and post `/release` when handing off.
-6. Reviewers inspect the PR and post explained votes for its exact current commit. The bot summarizes support; a maintainer reviews and merges separately.
+6. Reviewers export a review packet, inspect the PR and its evidence, and post explained votes for its exact current commit. The bot summarizes support; a maintainer reviews and merges separately.
 
 The coordinator reads comments and PR metadata. It never executes task descriptions or contributor code.
 
 ## Use it with a GitHub repository
 
-The following commands assume a repository where the Commonwork coordinator has been installed. Replace `OWNER/REPO`, issue `12`, and PR `34` with actual values. Run commands from this checkout so `.commonwork/policy.json` is available.
+The following commands assume a repository where the Commonwork coordinator has been installed. Replace `OWNER/REPO`, issue `12`, and PR `34` with actual values. Run commands from this Commonwork checkout.
 
 ```sh
 python3 -m commonwork board --repo OWNER/REPO
-python3 -m commonwork packet --repo OWNER/REPO 12 --output work-packet.md
+python3 -m commonwork packet --repo OWNER/REPO 12 --output work-packets/task-12.md
+python3 -m commonwork review --repo OWNER/REPO 34 --output work-packets/review-34.md
 python3 -m commonwork tally --repo OWNER/REPO 34
 ```
 
-These commands read GitHub data; `packet` also writes the requested local file. Exporting a packet does not claim the task or start an AI tool. Public reads can work without authentication, subject to GitHub's rate limits.
+These commands read GitHub data and optionally save local files. A task packet leads with the assignment and pins the repository's base commit. A review packet records the PR's head and base commits, description, changed-file links, a manual checklist, and voting options. It does not download or execute patches or verify the author's claims. Exporting either packet does not reserve work or start an AI tool.
+
+The review export stops if the head, base, or PR state changes while it is being read, or if the changed-file list is incomplete. Rerun it for a fresh snapshot. Draft PRs are identified as drafts; closed PR packets are historical references, not invitations to vote on a closed PR.
 
 For the following commands, authenticate with your own GitHub account through `gh auth login`, or provide `GH_TOKEN` through your normal secret handling. They **post comments to GitHub**:
 
@@ -85,7 +101,21 @@ Choices are `yes`, `no`, `abstain`, and `withdraw`. The first three require an e
 
 The summary is **advisory**. It does not submit a GitHub approval, satisfy branch protection, or merge anything. One account is not one verified person, and these rules do not prevent someone using several accounts. Human-account ballots are not proof of independent human review.
 
-Policy lives in [`.commonwork/policy.json`](.commonwork/policy.json). An empty `eligible_voters` list permits all otherwise eligible accounts; a nonempty list restricts voting to those GitHub logins. Logins can change. The deployed default-branch policy controls bot summaries. The CLI's local policy, including a file selected with `--policy`, is informational and does not change the remote coordinator.
+Policy lives in [`.commonwork/policy.json`](.commonwork/policy.json). An empty `eligible_voters` list permits all otherwise eligible accounts; a nonempty list restricts voting to those GitHub logins. Logins can change.
+
+By default, `board`, `packet`, `tally`, `vote`, `claim`, and `release` read the **target repository's** policy, pinned to its default-branch commit. Board snapshots, task packets, and tallies identify that policy source. Use `--policy PATH` with those commands only when you deliberately want a local override. That override is informational: it changes local calculations or packet guidance, not the installed bot's rules or your vote's eligibility. The coordinator continues to load policy from its trusted default-branch checkout. `review` does not take a policy override.
+
+## Try the offline example
+
+From this repository's root:
+
+```sh
+python3 -m commonwork demo
+```
+
+Open `demo-output/index.html` in a browser. The example also creates `work-packet.md`, `vote-summary.md`, and `results.json` in `demo-output/`. It shows a reservation, a vote with two yes ballots and one no, and votes becoming stale after a new commit. These are fixture results, not real contributions or GitHub activity. The demo uses no accounts, network, or AI tokens.
+
+![Commonwork offline demonstration](docs/preview.jpg)
 
 ## Install when the owner is ready
 
